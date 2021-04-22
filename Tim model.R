@@ -89,7 +89,7 @@ simulate_infection <- function(herddata, alpha, beta, R0, totaltime){
       herddata$currentstate[IndI] = "R"
     }
     #Calculate next time point
-    time =+ rexp(1, totalR)
+    time = time + rexp(1, totalR)
     events = rbind(events, c(time, event, IndID))
   }
   return(list(herddata, events))
