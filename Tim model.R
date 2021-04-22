@@ -60,8 +60,39 @@ set_herd <- function(pedigree, nherds, off_sire_g, nsires_g){
   return(offspring)
 }
 
-simulateinfection <- function(herddata, alpha, beta, R0, totaltime){
-  # return(herddata)
+simulate_infection <- function(herddata, alpha, beta, R0, totaltime){
+  Prevalence<- 1-1/R0
+  herddata$initialstate <- c("S", "I")[rbinom(nrow(herddata),1,Prevalence) + 1] 
+  herddata$currentstate <- herddata$initialstate
+  time = 0
+  events = data.frame(0, NA, NA)
+  colnames(events) = c("Time", "Event", "Cow ID")
+  while(time < totaltime){
+    #Calculate chances of a happening
+    Rinf = beta * (herddata$currentstate == "S") * herddata$suseptibility *
+      mean((herddata$currentstate == "I") * herddata$infectivity)
+    Rrec = (herddata$currentstate == "I") * alpha
+    totalR = sum(Rinf) + sum(Rrec)
+    #take cumsums
+    cuminf <- cumsum(Rinf / totalR)
+    cumrec <- cumsum(Rrec / totalR) + cuminf[length(cuminf)] 
+    randomNumber = runif(1,0,1)
+    if (randomNumber <= cuminf[length(cuminf)]){
+      event = "Infection"
+      IndI <- min(which(cuminf >= randomNumber))
+      IndID <- herddata$offspring[IndI]
+      herddata$currentstate[IndI] = "I"
+    }else{
+      event = "Recovery"
+      IndI <- min(which(cumrec >= randomNumber))
+      IndID <- herddata$offspring[IndI]
+      herddata$currentstate[IndI] = "R"
+    }
+    #Calculate next time point
+    time =+ rexp(1, totalR)
+    events = rbind(events, c(time, event, IndID))
+  }
+  return(list(herddata, events))
 }
 
 ### Input parameters #########################################################
@@ -95,19 +126,8 @@ pedigree <- set_herd(pedigree, nherds, nOffspringPerHerd, nSiresPerHerd)
 ## Simulate the infection for all the herds
 for(herd in levels(pedigree$herd)){
   herddata <- pedigree[pedigree$herd == herd,]
+  output <- simulate_infection(herddata, alpha, beta, R0, totaltime)
 }
 
-Prevalence<- 1-1/R0
-herddata$initialstate <- c("S", "I")[rbinom(nrow(herddata),1,Prevalence) + 1] 
-herddata$currentstate <- herddata$initialstate
-time = 0
-happenings = c(0, "-", "-")
-while(time < totaltime & herddata$currentstate != rep("R", nrow(herddata))){
-  #Calculate chances of a happening
-  Rinf = (herddata$currentstate == "S") * herddata$suseptibility * 
-    mean((herddata$currentstate == "I") * herddata$infectivity)
-  Rrec = (herddata$currentstate == "I") * alpha
-  totalR = sum(Rinf) + sum(Rrec)
-  #Calculate next time point
-  time =+ rexp(1, Rtotal)
-}
+
+
