@@ -60,7 +60,9 @@ set_herd <- function(pedigree, nherds, off_sire_g, nsires_g){
   return(offspring)
 }
 
-simulate_infection <- function(herddata, alpha, beta, R0, totaltime){
+simulate_infection <- function(herddata, alpha, beta, R0, totaltime, 
+                               suseptibility = c(1), infectivity = c(1), 
+                               recoverability = c(1), model = "SIR"){
   Prevalence<- 1-1/R0
   herddata$initialstate <- c("S", "I")[rbinom(nrow(herddata),1,Prevalence) + 1] 
   herddata$currentstate <- herddata$initialstate
@@ -69,9 +71,9 @@ simulate_infection <- function(herddata, alpha, beta, R0, totaltime){
   colnames(events) = c("Time", "Event", "Cow ID")
   while(time < totaltime){
     #Calculate chances of a happening
-    Rinf = beta * (herddata$currentstate == "S") * herddata$suseptibility *
-      mean((herddata$currentstate == "I") * herddata$infectivity)
-    Rrec = (herddata$currentstate == "I") * alpha
+    Rinf = beta * (herddata$currentstate == "S") * suseptibility *
+      mean((herddata$currentstate == "I") * infectivity)
+    Rrec = (herddata$currentstate == "I") * alpha * recoverability
     totalR = sum(Rinf) + sum(Rrec)
     #take cumsums
     cuminf <- cumsum(Rinf / totalR)
@@ -86,7 +88,11 @@ simulate_infection <- function(herddata, alpha, beta, R0, totaltime){
       event = "Recovery"
       IndI <- min(which(cumrec >= randomNumber))
       IndID <- herddata$offspring[IndI]
-      herddata$currentstate[IndI] = "R"
+      if(model == "SIR"){
+        herddata$currentstate[IndI] = "R"
+      } else if (model == "SIS"){
+        herddata$currentstate[IndI] = "S"
+      }
     }
     #Calculate next time point
     time = time + rexp(1, totalR)
@@ -126,7 +132,9 @@ pedigree <- set_herd(pedigree, nherds, nOffspringPerHerd, nSiresPerHerd)
 ## Simulate the infection for all the herds
 for(herd in levels(pedigree$herd)){
   herddata <- pedigree[pedigree$herd == herd,]
-  output <- simulate_infection(herddata, alpha, beta, R0, totaltime)
+  output <- simulate_infection(herddata, alpha, beta, R0, totaltime,
+                               infectivity = herddata$infectivity, 
+                               suseptibility = herddata$suseptibility)
 }
 
 
