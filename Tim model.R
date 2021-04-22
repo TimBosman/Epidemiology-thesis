@@ -39,6 +39,7 @@ add_trait_to_pedigree <- function(name, vA, vE, pedigree){
 
 set_herd <- function(pedigree, nherds, off_sire_g, nsires_g){
   #Based on script of Dries Hulst
+  #Download on: https://doi.org/10.25386/genetics.13090076 (S4)
   samples_sg <- matrix(nrow = nherds, ncol = nsires_g)
   samples_sg[,1] <- sample(1:nherds, nherds, replace = FALSE)
   for (s in 2:nsires_g){
@@ -55,6 +56,7 @@ set_herd <- function(pedigree, nherds, off_sire_g, nsires_g){
     offspring_sel$herd <- rep(samples_sg[s,1:nsires_g],off_sire_g)
     offspring <- rbind(offspring, offspring_sel)
   }
+  offspring$herd <- as.factor(offspring$herd)
   return(offspring)
 }
 
