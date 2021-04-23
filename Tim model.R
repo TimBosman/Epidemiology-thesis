@@ -94,7 +94,7 @@ simulate_infection <- function(herddata, alpha, beta, R0, totaltime,
         herddata$currentstate[IndI] = "S"
       }
     }
-    #Calculate next time point
+    #Calculate time point
     time = time + rexp(1, totalR)
     events = rbind(events, c(time, event, IndID))
   }
@@ -119,7 +119,7 @@ vEinf = 0.5 # Environmental variation in infectivity
 R0 = 1.5
 alpha = 0.02
 beta = 0.03
-totaltime = 1
+totaltime = 70
 
 ### Main script ############################################################## 
 
@@ -138,4 +138,5 @@ for(herd in levels(pedigree$herd)){
 }
 
 
-
+pedigree[pedigree$offspring %in% output[[2]]$`Cow ID`,]
+  
