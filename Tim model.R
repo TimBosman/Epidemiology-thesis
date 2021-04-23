@@ -82,12 +82,12 @@ simulate_infection <- function(herddata, alpha, beta, R0, totaltime,
     if (randomNumber <= cuminf[length(cuminf)]){
       event = "Infection"
       IndI <- min(which(cuminf >= randomNumber))
-      IndID <- herddata$offspring[IndI]
+      IndID <- as.character(herddata$offspring[IndI])
       herddata$currentstate[IndI] = "I"
     }else{
       event = "Recovery"
       IndI <- min(which(cumrec >= randomNumber))
-      IndID <- herddata$offspring[IndI]
+      IndID <- as.character(herddata$offspring[IndI])
       if(model == "SIR"){
         herddata$currentstate[IndI] = "R"
       } else if (model == "SIS"){
@@ -136,7 +136,3 @@ for(herd in levels(pedigree$herd)){
                                infectivity = herddata$infectivity, 
                                suseptibility = herddata$suseptibility)
 }
-
-
-pedigree[pedigree$offspring %in% output[[2]]$`Cow ID`,]
-  
