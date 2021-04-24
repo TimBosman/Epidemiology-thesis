@@ -143,9 +143,14 @@ pedigree <- add_trait_to_pedigree("infectivity", vAinf, vEinf, pedigree,
 pedigree <- set_herd(pedigree, nherds, nOffspringPerHerd, nSiresPerHerd)
 
 ## Simulate the infection for all the herds
+InfectedPedigree = data.frame()
+events = data.frame()
 for(herd in levels(pedigree$herd)){
   herddata <- pedigree[pedigree$herd == herd,]
   output <- simulate_infection(herddata, alpha, beta, R0, totaltime,
                                infectivity = herddata$infectivity, 
                                suseptibility = herddata$suseptibility)
+  InfectedPedigree <- rbind(InfectedPedigree, output[[1]])
+  events <- rbind(events, output[[2]])
 }
+
