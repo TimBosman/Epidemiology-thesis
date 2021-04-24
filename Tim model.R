@@ -22,18 +22,29 @@ get_pedigree <- function(nsires, ndams = NA, OffspringPerMate = 1,
   return(ped)
 }
 
-add_trait_to_pedigree <- function(name, vA, vE, pedigree){
-  nsires <- length(levels(pedigree$sires))
-  mates <- nrow(pedigree) / nsires
-  Adams <- rnorm(nrow(pedigree),0, sqrt(vA))
-  Asire <- rnorm(nsires,0, sqrt(vA))
-  vMS <- 0.5*vA
+add_trait_to_pedigree <- function(name, vA, vE, pedigree, SireBVFile = NA, 
+                                  DamBVFile = NA){
+  # nsires <- length(levels(pedigree$sires))
+  # mates <- nrow(pedigree) / nsires
+  Adams <- rnorm(length(levels(pedigree$dams)),0, sqrt(vA))
+  Asire <- rnorm(length(levels(pedigree$sires)),0, sqrt(vA))
+  vMS <- 0.5 * vA
   MS <- rnorm(nrow(pedigree),0,sqrt(vMS))
-  Arec <- 0.5* c(sapply(Asire, function(sire){rep(sire, mates)})) + 0.5 * Adams + MS
-  Erec <- rnorm(nrow(pedigree),0,sqrt(vE))
-  trait <- exp(Arec+Erec)
+  Arec <- 0.5 * Asire[pedigree$sires] + 0.5 * Adams[pedigree$dams] + MS
+  Erec <- rnorm(nrow(pedigree), 0, sqrt(vE))
+  trait <- exp(Arec + Erec)
   pedigree <- cbind(pedigree, trait)
   colnames(pedigree)[colnames(pedigree)=="trait"] <- name
+  if (!is.na(SireBVFile)){
+    df = unique.data.frame(cbind(pedigree$sires, Asire[pedigree$sires]))
+    colnames(df) <- c("Sire ID", paste("BV for", name))
+    write.csv(df, SireBVFile, row.names = FALSE)
+  }
+  if (!is.na(DamBVFile)){
+    df = unique.data.frame(cbind(pedigree$dams, Adams[pedigree$dams]))
+    colnames(df) <- c("Dam ID", paste("BV for", name))
+    write.csv(df, DamBVFile, row.names = FALSE)
+  }
   return(pedigree)
 }
 
@@ -125,8 +136,10 @@ totaltime = 70
 
 ## Simulate pedigree and add traits and herds ## 
 pedigree <- get_pedigree(nsire, ndams)
-pedigree <- add_trait_to_pedigree("suseptibility", vAsus, vEsus, pedigree)
-pedigree <- add_trait_to_pedigree("infectivity", vAinf, vEinf, pedigree)
+pedigree <- add_trait_to_pedigree("suseptibility", vAsus, vEsus, pedigree, 
+                                  SireBVFile = "BVsus.csv")
+pedigree <- add_trait_to_pedigree("infectivity", vAinf, vEinf, pedigree, 
+                                  SireBVFile = "BVinf.csv")
 pedigree <- set_herd(pedigree, nherds, nOffspringPerHerd, nSiresPerHerd)
 
 ## Simulate the infection for all the herds
