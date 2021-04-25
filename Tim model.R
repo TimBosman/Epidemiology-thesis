@@ -109,7 +109,22 @@ simulate_infection <- function(herddata, alpha, beta, R0, totaltime,
     time = time + rexp(1, totalR)
     events = rbind(events, c(time, event, IndID))
   }
+  events$Time <- as.numeric(events$Time)
+  events = events[!is.na(events$Event), ]
   return(list(herddata, events))
+}
+
+Generate_time_series_data <- function(timepoints, events, pedigree){
+  events$Time <- as.numeric(events$Time)
+  for(timepoint in timepoints){
+    temp_events = events[events$Time < timepoint, ]
+    recovered = temp_events$`Cow ID`[temp_events$Event == "Recovery"]
+    infected = temp_events$`Cow ID`[temp_events$Event == "Infection"]
+    pedigree[, as.character(timepoint)] = pedigree$initialstate
+    pedigree[as.character(pedigree$offspring) %in% infected, as.character(timepoint)] = "I"
+    pedigree[as.character(pedigree$offspring) %in% recovered, as.character(timepoint)] = "R"
+  }
+  return(pedigree)
 }
 
 ### Input parameters #########################################################
@@ -154,3 +169,4 @@ for(herd in levels(pedigree$herd)){
   events <- rbind(events, output[[2]])
 }
 
+data <- Generate_time_series_data(c(0,7,14,21,28,35,42,56,63,70), events, InfectedPedigree)
