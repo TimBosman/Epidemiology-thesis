@@ -1,5 +1,6 @@
 #### Imports #################################################################
-#No imports
+library(tidyr)
+library(ggplot2)
 
 ### Functions ################################################################
 
@@ -127,6 +128,15 @@ Generate_time_series_data <- function(timepoints, events, pedigree){
   return(pedigree)
 }
 
+Plot_time_series <- function(TimeSeries, timepoints){
+  temp <- pivot_longer(TimeSeries, as.character(timepoints), "Time")
+  temp$Time <- as.factor(as.numeric(temp$Time))
+  temp$value[temp$value == "R"] <- "Recovered"
+  temp$value[temp$value == "I"] <- "Infected"
+  temp$value[temp$value == "S"] <-  "Susceptible"
+  ggplot(temp) + geom_bar(aes(x= Time, fill = value), stat = "count") 
+}
+
 ### Input parameters #########################################################
 ## population stats ##
 nsire = 102
@@ -168,5 +178,8 @@ for(herd in levels(pedigree$herd)){
   InfectedPedigree <- rbind(InfectedPedigree, output[[1]])
   events <- rbind(events, output[[2]])
 }
+timepoints = c(0,7,14,21,28,35,42,56,63,70)
 
-data <- Generate_time_series_data(c(0,7,14,21,28,35,42,56,63,70), events, InfectedPedigree)
+pedigree <- Generate_time_series_data(timepoints, events, InfectedPedigree)
+
+Plot_time_series(pedigree, timepoints)
