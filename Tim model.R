@@ -72,9 +72,10 @@ set_herd <- function(pedigree, nherds, off_sire_g, nsires_g){
   return(offspring)
 }
 
-simulate_infection <- function(herddata, alpha, beta, R0, totaltime, 
+simulate_infection <- function(herddata, alpha, beta, totaltime, 
                                suseptibility = c(1), infectivity = c(1), 
                                recoverability = c(1), model = "SIR"){
+  R0 = beta / alpha
   Prevalence<- 1-1/R0
   herddata$initialstate <- c("S", "I")[rbinom(nrow(herddata),1,Prevalence) + 1] 
   herddata$currentstate <- herddata$initialstate
@@ -152,7 +153,6 @@ vAinf = 0.5 # variation in infectivity
 vEinf = 0.5 # Environmental variation in infectivity
 
 ## Infection stats ##
-R0 = 1.5
 alpha = 0.02
 beta = 0.03
 totaltime = 70
