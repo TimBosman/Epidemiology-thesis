@@ -1,21 +1,21 @@
-#### Imports #################################################################
+#### Imports ##################################################################
 library(tidyr)
 library(ggplot2)
 
-### Functions ################################################################
+### Functions #################################################################
 
 get_pedigree <- function(nsires, ndams = NA, OffspringPerMate = 1, 
                          ndamsPerSire = NA){
   #If number of dams per sire is set overrule the ndams
-  if(is.na(ndamsPerSire)){
+  if (is.na(ndamsPerSire)) {
     ndamsPerSire <- ndams / nsires
   }
   #Calculate the total number of offspring
   noff <- nsires*ndamsPerSire * OffspringPerMate
   #Get numbers for individuals
-  sires = rep(1 : nsires, each=ndamsPerSire)
-  dams = (nsires + 1) : ((nsires * ndamsPerSire) + nsires)
-  offspring = (dams[length(dams)] + 1) : (dams[length(dams)] + noff)
+  sires <- rep(1:nsires, each = ndamsPerSire)
+  dams <- (nsires + 1):((nsires * ndamsPerSire) + nsires)
+  offspring <- (dams[length(dams)] + 1):(dams[length(dams)] + noff)
   ped <- as.data.frame(cbind(offspring, sires, dams))
   ped$sires <- as.factor(ped$sires)
   ped$dams <- as.factor(ped$dams)
@@ -27,22 +27,22 @@ add_trait_to_pedigree <- function(name, vA, vE, pedigree, SireBVFile = NA,
                                   DamBVFile = NA){
   # nsires <- length(levels(pedigree$sires))
   # mates <- nrow(pedigree) / nsires
-  Adams <- rnorm(length(levels(pedigree$dams)),0, sqrt(vA))
-  Asire <- rnorm(length(levels(pedigree$sires)),0, sqrt(vA))
+  Adams <- rnorm(length(levels(pedigree$dams)), 0, sqrt(vA))
+  Asire <- rnorm(length(levels(pedigree$sires)), 0, sqrt(vA))
   vMS <- 0.5 * vA
-  MS <- rnorm(nrow(pedigree),0,sqrt(vMS))
+  MS <- rnorm(nrow(pedigree), 0, sqrt(vMS))
   Arec <- 0.5 * Asire[pedigree$sires] + 0.5 * Adams[pedigree$dams] + MS
   Erec <- rnorm(nrow(pedigree), 0, sqrt(vE))
   trait <- exp(Arec + Erec)
   pedigree <- cbind(pedigree, trait)
   colnames(pedigree)[colnames(pedigree)=="trait"] <- name
-  if (!is.na(SireBVFile)){
-    df = unique.data.frame(cbind(pedigree$sires, Asire[pedigree$sires]))
+  if (!is.na(SireBVFile)) {
+    df <- unique.data.frame(cbind(pedigree$sires, Asire[pedigree$sires]))
     colnames(df) <- c("Sire ID", paste("BV for", name))
     write.csv(df, SireBVFile, row.names = FALSE)
   }
   if (!is.na(DamBVFile)){
-    df = unique.data.frame(cbind(pedigree$dams, Adams[pedigree$dams]))
+    df <- unique.data.frame(cbind(pedigree$dams, Adams[pedigree$dams]))
     colnames(df) <- c("Dam ID", paste("BV for", name))
     write.csv(df, DamBVFile, row.names = FALSE)
   }
@@ -58,14 +58,15 @@ set_herd <- function(pedigree, nherds, off_sire_g, nsires_g){
     repeat{
       samples_sg[,s]<- sample(1:nherds, nherds, replace = FALSE)
       samples_sgt<-samples_sg[,1:s]
-      if (sum(apply(samples_sgt,MARGIN = 1, function(x) length(unique(x))))==(nrow(samples_sg)*s)) break
+      if (sum(apply(samples_sgt, MARGIN = 1, function(x) length(unique(x))))
+          == (nrow(samples_sg)*s)) break
     }
   }
   offspring <- matrix(nrow = 0, ncol = ncol(pedigree)+1)
   colnames(offspring) <- c(colnames(pedigree), "group")
   for(s in 1:length(levels(pedigree$sires))){
     offspring_sel <- pedigree[pedigree$sires==s,]
-    offspring_sel$herd <- rep(samples_sg[s,1:nsires_g],off_sire_g)
+    offspring_sel$herd <- rep(samples_sg[s,1:nsires_g], off_sire_g)
     offspring <- rbind(offspring, offspring_sel)
   }
   offspring$herd <- as.factor(offspring$herd)
@@ -75,56 +76,58 @@ set_herd <- function(pedigree, nherds, off_sire_g, nsires_g){
 simulate_infection <- function(herddata, alpha, beta, totaltime, 
                                suseptibility = c(1), infectivity = c(1), 
                                recoverability = c(1), model = "SIR"){
-  R0 = beta / alpha
+  R0 <- beta / alpha
   Prevalence<- 1-1/R0
-  herddata$initialstate <- c("S", "I")[rbinom(nrow(herddata),1,Prevalence) + 1] 
+  herddata$initialstate <- c("S", "I")[rbinom(nrow(herddata), 1, Prevalence) + 1]
   herddata$currentstate <- herddata$initialstate
-  time = 0
-  events = data.frame(0, NA, NA)
-  colnames(events) = c("Time", "Event", "Cow ID")
+  time <- 0
+  events <- data.frame(0, NA, NA)
+  colnames(events) <- c("Time", "Event", "Cow ID")
   while(time < totaltime){
     #Calculate chances of a happening
-    Rinf = beta * (herddata$currentstate == "S") * suseptibility *
+    Rinf <- beta * (herddata$currentstate == "S") * suseptibility *
       mean((herddata$currentstate == "I") * infectivity)
-    Rrec = (herddata$currentstate == "I") * alpha * recoverability
-    totalR = sum(Rinf) + sum(Rrec)
+    Rrec <- (herddata$currentstate == "I") * alpha * recoverability
+    totalR <- sum(Rinf) + sum(Rrec)
     #take cumsums
     cuminf <- cumsum(Rinf / totalR)
     cumrec <- cumsum(Rrec / totalR) + cuminf[length(cuminf)] 
-    randomNumber = runif(1,0,1)
-    if (randomNumber <= cuminf[length(cuminf)]){
-      event = "Infection"
+    randomNumber <- runif(1, 0, 1)
+    if (randomNumber <= cuminf[length(cuminf)]) {
+      event <- "Infection"
       IndI <- min(which(cuminf >= randomNumber))
       IndID <- as.character(herddata$offspring[IndI])
-      herddata$currentstate[IndI] = "I"
-    }else{
-      event = "Recovery"
+      herddata$currentstate[IndI] <- "I"
+    } else {
+      event <- "Recovery"
       IndI <- min(which(cumrec >= randomNumber))
       IndID <- as.character(herddata$offspring[IndI])
       if(model == "SIR"){
-        herddata$currentstate[IndI] = "R"
-      } else if (model == "SIS"){
-        herddata$currentstate[IndI] = "S"
+        herddata$currentstate[IndI] <- "R"
+      } else if (model == "SIS") {
+        herddata$currentstate[IndI] <- "S"
       }
     }
     #Calculate time point
-    time = time + rexp(1, totalR)
-    events = rbind(events, c(time, event, IndID))
+    time <- time + rexp(1, totalR)
+    events <- rbind(events, c(time, event, IndID))
   }
   events$Time <- as.numeric(events$Time)
-  events = events[!is.na(events$Event), ]
+  events <- events[!is.na(events$Event), ]
   return(list(herddata, events))
 }
 
 Generate_time_series_data <- function(timepoints, events, pedigree){
   events$Time <- as.numeric(events$Time)
   for(timepoint in timepoints){
-    temp_events = events[events$Time < timepoint, ]
-    recovered = temp_events$`Cow ID`[temp_events$Event == "Recovery"]
-    infected = temp_events$`Cow ID`[temp_events$Event == "Infection"]
-    pedigree[, as.character(timepoint)] = pedigree$initialstate
-    pedigree[as.character(pedigree$offspring) %in% infected, as.character(timepoint)] = "I"
-    pedigree[as.character(pedigree$offspring) %in% recovered, as.character(timepoint)] = "R"
+    temp_events <- events[events$Time < timepoint, ]
+    recovered <- temp_events$`Cow ID`[temp_events$Event == "Recovery"]
+    infected <- temp_events$`Cow ID`[temp_events$Event == "Infection"]
+    pedigree[, as.character(timepoint)] <- pedigree$initialstate
+    pedigree[as.character(pedigree$offspring) %in% infected, 
+             as.character(timepoint)] <- "I"
+    pedigree[as.character(pedigree$offspring) %in% recovered, 
+             as.character(timepoint)] <- "R"
   }
   return(pedigree)
 }
@@ -138,26 +141,26 @@ Plot_time_series <- function(TimeSeries, timepoints){
   ggplot(temp) + geom_bar(aes(x= Time, fill = value), stat = "count") 
 }
 
-### Input parameters #########################################################
+### Input parameters ##########################################################
 ## population stats ##
-nsire = 102
-ndams = nsire * 102
-nherds = 102
-nSiresPerHerd = 6
-nOffspringPerHerd = 17 # number of offspring of one sire in herd
+nsire <- 102
+ndams <- nsire * 102
+nherds <- 102
+nSiresPerHerd <- 6
+nOffspringPerHerd <- 17 # number of offspring of one sire in herd
 
 ## Trait stats ##
-vAsus = 0.5 # variation in suseptibility
-vEsus = 0.5 # Environmental variation in suseptibility
-vAinf = 0.5 # variation in infectivity
-vEinf = 0.5 # Environmental variation in infectivity
+vAsus <- 0.5 # variation in suseptibility
+vEsus <- 0.5 # Environmental variation in suseptibility
+vAinf <- 0.5 # variation in infectivity
+vEinf <- 0.5 # Environmental variation in infectivity
 
 ## Infection stats ##
-alpha = 0.02
-beta = 0.03
-totaltime = 70
+alpha <- 0.02
+beta <- 0.03
+timepoints <- c(0, 7, 14, 21, 28, 35, 42, 56, 63, 70)
 
-### Main script ############################################################## 
+### Main script ###############################################################
 
 ## Simulate pedigree and add traits and herds ## 
 pedigree <- get_pedigree(nsire, ndams)
@@ -168,17 +171,17 @@ pedigree <- add_trait_to_pedigree("infectivity", vAinf, vEinf, pedigree,
 pedigree <- set_herd(pedigree, nherds, nOffspringPerHerd, nSiresPerHerd)
 
 ## Simulate the infection for all the herds
-InfectedPedigree = data.frame()
-events = data.frame()
+InfectedPedigree <- data.frame()
+events <- data.frame()
 for(herd in levels(pedigree$herd)){
   herddata <- pedigree[pedigree$herd == herd,]
-  output <- simulate_infection(herddata, alpha, beta, R0, totaltime,
+  output <- simulate_infection(herddata, alpha, beta, max(timepoints),
                                infectivity = herddata$infectivity, 
                                suseptibility = herddata$suseptibility)
   InfectedPedigree <- rbind(InfectedPedigree, output[[1]])
   events <- rbind(events, output[[2]])
 }
-timepoints = c(0,7,14,21,28,35,42,56,63,70)
+
 
 pedigree <- Generate_time_series_data(timepoints, events, InfectedPedigree)
 
