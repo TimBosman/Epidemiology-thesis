@@ -1,5 +1,6 @@
 #### Imports ##################################################################
 library(tidyr)
+library(plyr)
 library(ggplot2)
 
 ### Functions #################################################################
@@ -117,17 +118,24 @@ simulate_infection <- function(herddata, alpha, beta, totaltime,
   return(list(herddata, events))
 }
 
-Generate_time_series_data <- function(timepoints, events, pedigree){
+Generate_time_series_data <- function(timepoints, events, pedigree, model = "SIR"){
   events$Time <- as.numeric(events$Time)
   for(timepoint in timepoints){
     temp_events <- events[events$Time < timepoint, ]
+    temp_events <- ddply(temp_events, .(`Cow ID`), subset, 
+                         subset = Time == max(Time), select = c(`Cow ID`, Time, Event) )
     recovered <- temp_events$`Cow ID`[temp_events$Event == "Recovery"]
     infected <- temp_events$`Cow ID`[temp_events$Event == "Infection"]
     pedigree[, as.character(timepoint)] <- pedigree$initialstate
     pedigree[as.character(pedigree$offspring) %in% infected, 
              as.character(timepoint)] <- "I"
-    pedigree[as.character(pedigree$offspring) %in% recovered, 
-             as.character(timepoint)] <- "R"
+    if (model == "SIR"){
+      pedigree[as.character(pedigree$offspring) %in% recovered, 
+               as.character(timepoint)] <- "R"
+    } else {
+      pedigree[as.character(pedigree$offspring) %in% recovered, 
+               as.character(timepoint)] <- "S"
+    }
   }
   return(pedigree)
 }
@@ -158,7 +166,7 @@ vEinf <- 0.5 # Environmental variation in infectivity
 ## Infection stats ##
 alpha <- 0.02
 beta <- 0.03
-timepoints <- c(0, 7, 14, 21, 28, 35, 42, 56, 63, 70)
+timepoints <- c(0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 70)
 
 ### Main script ###############################################################
 
@@ -177,12 +185,12 @@ for(herd in levels(pedigree$herd)){
   herddata <- pedigree[pedigree$herd == herd,]
   output <- simulate_infection(herddata, alpha, beta, max(timepoints),
                                infectivity = herddata$infectivity, 
-                               suseptibility = herddata$suseptibility)
+                               suseptibility = herddata$suseptibility, model = "SIS")
   InfectedPedigree <- rbind(InfectedPedigree, output[[1]])
   events <- rbind(events, output[[2]])
 }
 
 
-pedigree <- Generate_time_series_data(timepoints, events, InfectedPedigree)
+pedigree <- Generate_time_series_data(timepoints, events, InfectedPedigree, model = "SIS")
 
 Plot_time_series(pedigree, timepoints)
