@@ -120,10 +120,10 @@ simulate_infection <- function(herddata, alpha, beta, totaltime,
 
 Generate_time_series_data <- function(timepoints, events, pedigree, model = "SIR"){
   events$Time <- as.numeric(events$Time)
-  for(timepoint in timepoints){
+  for(timepoint in timepoints) {
     temp_events <- events[events$Time < timepoint, ]
-    temp_events <- ddply(temp_events, .(`Cow ID`), subset, 
-                         subset = Time == max(Time), select = c(`Cow ID`, Time, Event) )
+    temp_events <- ddply(temp_events, .(`Cow ID`), subset, subset = Time == 
+                           max(Time), select = c(`Cow ID`, Time, Event))
     recovered <- temp_events$`Cow ID`[temp_events$Event == "Recovery"]
     infected <- temp_events$`Cow ID`[temp_events$Event == "Infection"]
     pedigree[, as.character(timepoint)] <- pedigree$initialstate
@@ -185,12 +185,12 @@ for(herd in levels(pedigree$herd)){
   herddata <- pedigree[pedigree$herd == herd,]
   output <- simulate_infection(herddata, alpha, beta, max(timepoints),
                                infectivity = herddata$infectivity, 
-                               suseptibility = herddata$suseptibility, model = "SIS")
+                               suseptibility = herddata$suseptibility)
   InfectedPedigree <- rbind(InfectedPedigree, output[[1]])
   events <- rbind(events, output[[2]])
 }
 
 
-pedigree <- Generate_time_series_data(timepoints, events, InfectedPedigree, model = "SIS")
+pedigree <- Generate_time_series_data(timepoints, events, InfectedPedigree)
 
 Plot_time_series(pedigree, timepoints)
