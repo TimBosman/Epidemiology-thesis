@@ -74,21 +74,27 @@ set_herd <- function(pedigree, nherds, off_sire_g, nsires_g){
   return(offspring)
 }
 
-simulate_infection <- function(herddata, alpha, beta, totaltime, 
-                               suseptibility = c(1), infectivity = c(1), 
-                               recoverability = c(1), model = "SIR"){
-  R0 <- beta / alpha
+simulate_infection <- function(herddata, alpha, contactrate, totaltime, 
+                               susceptibility = rep(1, nrow(herddata)), 
+                               infectivity = rep(1, nrow(herddata)), 
+                               recoverability = rep(1, nrow(herddata)), 
+                               model = "SIR"){
+  R0 <- contactrate / alpha
   Prevalence<- 1-1/R0
   herddata$initialstate <- c("S", "I")[rbinom(nrow(herddata), 1, Prevalence) + 1]
   herddata$currentstate <- herddata$initialstate
   time <- 0
   events <- data.frame(0, NA, NA)
   colnames(events) <- c("Time", "Event", "Cow ID")
-  while(time < totaltime){
+  while(time < totaltime & sum(herddata$currentstate == "I") >= 1){
+    #Calculate beta
+    beta <- contactrate * 
+      mean(infectivity[which(herddata$currentstate == "I")])
     #Calculate chances of a happening
-    Rinf <- beta * (herddata$currentstate == "S") * suseptibility *
-      mean((herddata$currentstate == "I") * infectivity)
-    Rrec <- (herddata$currentstate == "I") * alpha * recoverability
+    Rinf <- beta * sum(herddata$currentstate == "I") * 
+      susceptibility * as.numeric(herddata$currentstate == "S") / 
+      length(herddata$currentstate)
+    Rrec <- recoverability * as.numeric(herddata$currentstate == "I") * alpha
     totalR <- sum(Rinf) + sum(Rrec)
     #take cumsums
     cuminf <- cumsum(Rinf / totalR)
@@ -165,30 +171,34 @@ vEinf <- 0.5 # Environmental variation in infectivity
 
 ## Infection stats ##
 alpha <- 0.02
-beta <- 0.03
-timepoints <- c(0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 70)
+contactrate <- 0.03
+timepoints <- 0:20 * 14
 
 ### Main script ###############################################################
 
 ## Simulate pedigree and add traits and herds ## 
 pedigree <- get_pedigree(nsire, ndams)
-pedigree <- add_trait_to_pedigree("suseptibility", vAsus, vEsus, pedigree, 
+pedigree <- add_trait_to_pedigree("susceptibility", vAsus, vEsus, pedigree, 
                                   SireBVFile = "BVsus.csv")
 pedigree <- add_trait_to_pedigree("infectivity", vAinf, vEinf, pedigree, 
                                   SireBVFile = "BVinf.csv")
 pedigree <- set_herd(pedigree, nherds, nOffspringPerHerd, nSiresPerHerd)
 
-## Simulate the infection for all the herds
 InfectedPedigree <- data.frame()
 events <- data.frame()
-for(herd in levels(pedigree$herd)){
+for(herd in levels(pedigree$herd)[1]){
   herddata <- pedigree[pedigree$herd == herd,]
-  output <- simulate_infection(herddata, alpha, beta, max(timepoints),
-                               infectivity = herddata$infectivity, 
-                               suseptibility = herddata$suseptibility)
+  output <- simulate_infection(herddata, alpha, contactrate, max(timepoints),
+                               infectivity = herddata$infectivity,
+                               susceptibility = herddata$susceptibility)
   InfectedPedigree <- rbind(InfectedPedigree, output[[1]])
   events <- rbind(events, output[[2]])
 }
+
+
+
+
+
 
 
 pedigree <- Generate_time_series_data(timepoints, events, InfectedPedigree)
