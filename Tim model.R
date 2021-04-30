@@ -47,4 +47,4 @@ pedigree <- Generate_time_series_data(timepoints, events, InfectedPedigree)
 
 Plot_time_series(pedigree, timepoints)
 
-Plot_infected_fraction(events, 1:9)
+Plot_infected_fraction(events, 1:102)

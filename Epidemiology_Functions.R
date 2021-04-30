@@ -2,6 +2,7 @@
 library(tidyr)
 library(plyr)
 library(ggplot2)
+library(patchwork)
 
 ### Functions #################################################################
 
@@ -163,6 +164,12 @@ Plot_time_series <- function(TimeSeries, timepoints){
 
 Plot_infected_fraction <- function(events, herds){
   events <- events[events$herd %in% herds, ]
-  ggplot(events) + geom_point(aes(x= Time, y = as.numeric(`Fraction infected`), col = herd)) + 
-    ylab("Fraction infected animals")
+  points <- ggplot(events, aes(x= Time, y = as.numeric(`Fraction infected`), col = as.factor(herd))) +
+    geom_point() + theme(legend.position = "none") +
+    ylab("Fraction infected animals") + ggtitle("A")
+  line <-  ggplot(events, aes(x= Time, y = as.numeric(`Fraction infected`))) +
+    geom_smooth(se = TRUE, method = "gam") +
+    ylab("Fraction infected animals") + ggtitle("B")
+
+  points + line + plot_layout(nrow = 2)
 }
