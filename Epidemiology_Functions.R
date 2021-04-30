@@ -84,8 +84,8 @@ simulate_infection <- function(herddata, alpha, contactrate, totaltime,
   herddata$initialstate <- c("S", "I")[rbinom(nrow(herddata), 1, Prevalence) + 1]
   herddata$currentstate <- herddata$initialstate
   time <- 0
-  events <- data.frame(0, NA, NA)
-  colnames(events) <- c("Time", "Event", "Cow ID")
+  events <- data.frame(0, NA, NA, NA, NA)
+  colnames(events) <- c("Time", "Event", "Cow ID", "herd", "Status after event")
   while(time < totaltime & sum(herddata$currentstate == "I") >= 1){
     #Calculate beta
     beta <- contactrate * 
@@ -104,20 +104,23 @@ simulate_infection <- function(herddata, alpha, contactrate, totaltime,
       event <- "Infection"
       IndI <- min(which(cuminf >= randomNumber))
       IndID <- as.character(herddata$offspring[IndI])
-      herddata$currentstate[IndI] <- "I"
+      newstatus = "I"
+      herddata$currentstate[IndI] <- newstatus
     } else {
       event <- "Recovery"
       IndI <- min(which(cumrec >= randomNumber))
       IndID <- as.character(herddata$offspring[IndI])
       if(model == "SIR"){
-        herddata$currentstate[IndI] <- "R"
+        newstatus = "R"
+        herddata$currentstate[IndI] <- newstatus
       } else if (model == "SIS") {
-        herddata$currentstate[IndI] <- "S"
+        newstatus <- "S"
+        herddata$currentstate[IndI] <- newstatus
       }
     }
     #Calculate time point
     time <- time + rexp(1, totalR)
-    events <- rbind(events, c(time, event, IndID))
+    events <- rbind(events, c(time, event, IndID, herd, newstatus))
   }
   events$Time <- as.numeric(events$Time)
   events <- events[!is.na(events$Event), ]
