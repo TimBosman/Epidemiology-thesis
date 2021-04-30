@@ -33,7 +33,7 @@ pedigree <- set_herd(pedigree, nherds, nOffspringPerHerd, nSiresPerHerd)
 ## Simulate infection for every herd ##
 InfectedPedigree <- data.frame()
 events <- data.frame()
-for(herd in levels(pedigree$herd)[1]){
+for(herd in levels(pedigree$herd)){
   herddata <- pedigree[pedigree$herd == herd,]
   output <- simulate_infection(herddata, alpha, contactrate, max(timepoints),
                                infectivity = herddata$infectivity,
@@ -46,3 +46,5 @@ for(herd in levels(pedigree$herd)[1]){
 pedigree <- Generate_time_series_data(timepoints, events, InfectedPedigree)
 
 Plot_time_series(pedigree, timepoints)
+
+Plot_infected_fraction(events, 1:9)

@@ -84,8 +84,9 @@ simulate_infection <- function(herddata, alpha, contactrate, totaltime,
   herddata$initialstate <- c("S", "I")[rbinom(nrow(herddata), 1, Prevalence) + 1]
   herddata$currentstate <- herddata$initialstate
   time <- 0
-  events <- data.frame(0, NA, NA, NA, NA)
-  colnames(events) <- c("Time", "Event", "Cow ID", "herd", "Status after event")
+  FractionInfected <- sum(herddata$initialstate == "I") / nrow(herddata)
+  events <- data.frame(0, NA, NA, NA, NA, FractionInfected)
+  colnames(events) <- c("Time", "Event", "Cow ID", "herd", "Status after event", "Fraction infected")
   while(time < totaltime & sum(herddata$currentstate == "I") >= 1){
     #Calculate beta
     beta <- contactrate * 
@@ -102,12 +103,14 @@ simulate_infection <- function(herddata, alpha, contactrate, totaltime,
     randomNumber <- runif(1, 0, 1)
     if (randomNumber <= cuminf[length(cuminf)]) {
       event <- "Infection"
+      FractionInfected <- FractionInfected + 1 / nrow(herddata)
       IndI <- min(which(cuminf >= randomNumber))
       IndID <- as.character(herddata$offspring[IndI])
       newstatus = "I"
       herddata$currentstate[IndI] <- newstatus
     } else {
       event <- "Recovery"
+      FractionInfected <- FractionInfected - 1 / nrow(herddata)
       IndI <- min(which(cumrec >= randomNumber))
       IndID <- as.character(herddata$offspring[IndI])
       if(model == "SIR"){
@@ -120,7 +123,7 @@ simulate_infection <- function(herddata, alpha, contactrate, totaltime,
     }
     #Calculate time point
     time <- time + rexp(1, totalR)
-    events <- rbind(events, c(time, event, IndID, herd, newstatus))
+    events <- rbind(events, c(time, event, IndID, herd, newstatus, FractionInfected))
   }
   events$Time <- as.numeric(events$Time)
   events <- events[!is.na(events$Event), ]
@@ -130,7 +133,7 @@ simulate_infection <- function(herddata, alpha, contactrate, totaltime,
 Generate_time_series_data <- function(timepoints, events, pedigree, model = "SIR"){
   events$Time <- as.numeric(events$Time)
   for(timepoint in timepoints) {
-    temp_events <- events[events$Time < timepoint, ]
+    temp_events <- events[events$Time <= timepoint, ]
     temp_events <- ddply(temp_events, .(`Cow ID`), subset, subset = Time == 
                            max(Time), select = c(`Cow ID`, Time, Event))
     recovered <- temp_events$`Cow ID`[temp_events$Event == "Recovery"]
@@ -156,4 +159,10 @@ Plot_time_series <- function(TimeSeries, timepoints){
   temp$value[temp$value == "I"] <- "Infected"
   temp$value[temp$value == "S"] <-  "Susceptible"
   ggplot(temp) + geom_bar(aes(x= Time, fill = value), stat = "count") 
+}
+
+Plot_infected_fraction <- function(events, herds){
+  events <- events[events$herd %in% herds, ]
+  ggplot(events) + geom_point(aes(x= Time, y = as.numeric(`Fraction infected`), col = herd)) + 
+    ylab("Fraction infected animals")
 }
