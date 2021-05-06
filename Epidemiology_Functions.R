@@ -175,3 +175,10 @@ Plot_infected_fraction <- function(events, herds){
 
   points + line + plot_layout(nrow = 2)
 }
+
+Write_infectivity_file_for_SIRE <- function(pedigree, filename, timepoints){
+  pedigree$type <- "Contact"
+  pedigree$type[pedigree$`0` == "I"] <- "Seeder"
+  pedigree <- pivot_longer(pedigree, as.character(timepoints), "time")
+  write.table(pedigree, file = filename, sep = "\t")
+}
