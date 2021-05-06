@@ -36,8 +36,10 @@ add_trait_to_pedigree <- function(name, vA, vE, pedigree, SireBVFile = NA,
   Arec <- 0.5 * Asire[pedigree$sires] + 0.5 * Adams[pedigree$dams] + MS
   Erec <- rnorm(nrow(pedigree), 0, sqrt(vE))
   trait <- exp(Arec + Erec)
-  pedigree <- cbind(pedigree, trait)
-  colnames(pedigree)[colnames(pedigree)=="trait"] <- name
+  pedigree <- cbind(pedigree, trait, Arec)
+  names(pedigree)[names(pedigree) %in%  c("trait", "Arec")] <- 
+    c(name, paste("breeding value of", name))
+  
   if (!is.na(SireBVFile)) {
     df <- unique.data.frame(cbind(pedigree$sires, Asire[pedigree$sires]))
     colnames(df) <- c("Sire ID", paste("BV for", name))
