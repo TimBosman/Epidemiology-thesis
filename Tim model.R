@@ -48,3 +48,5 @@ pedigree <- Generate_time_series_data(timepoints, events, InfectedPedigree)
 Plot_time_series(pedigree, timepoints)
 
 Plot_infected_fraction(events, 1:102)
+
+Write_infectivity_file_for_SIRE(pedigree, "SIRE.txt", timepoints)
