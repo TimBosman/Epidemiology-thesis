@@ -166,11 +166,11 @@ Plot_time_series <- function(TimeSeries, timepoints){
 
 Plot_infected_fraction <- function(events, herds){
   events <- events[events$herd %in% herds, ]
-  points <- ggplot(events, aes(x= Time, y = as.numeric(`Fraction infected`), col = as.factor(herd))) +
-    geom_point() + theme(legend.position = "none") +
+  points <- ggplot(events, aes(x= Time, y = as.numeric(`Fraction infected`))) +
+    geom_bin2d() + ylim(0, 1) + scale_fill_gradient(low="Grey", high="Black") +
     ylab("Fraction infected animals") + ggtitle("A")
   line <-  ggplot(events, aes(x= Time, y = as.numeric(`Fraction infected`))) +
-    geom_smooth(se = TRUE, method = "gam") +
+    geom_smooth(se = TRUE, method = "gam")  + ylim(0, 1) +
     ylab("Fraction infected animals") + ggtitle("B")
 
   points + line + plot_layout(nrow = 2)
