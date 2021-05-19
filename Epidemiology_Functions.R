@@ -81,10 +81,9 @@ simulate_infection <- function(herddata, alpha, contactrate, totaltime,
                                susceptibility = rep(1, nrow(herddata)), 
                                infectivity = rep(1, nrow(herddata)), 
                                recoverability = rep(1, nrow(herddata)), 
-                               model = "SIR"){
-  R0 <- contactrate / alpha
-  Prevalence<- 1-1/R0
-  herddata$initialstate <- c("S", "I")[rbinom(nrow(herddata), 1, Prevalence) + 1]
+                               model = "SIR", 
+                               initialstate = c("S", "I")[rbinom(nrow(herddata), 1, 1-1/(contactrate / alpha)) + 1]){
+  herddata$initialstate <- initialstate
   herddata$currentstate <- herddata$initialstate
   time <- 0
   FractionInfected <- sum(herddata$initialstate == "I") / nrow(herddata)
@@ -164,13 +163,13 @@ Plot_time_series <- function(TimeSeries, timepoints){
   ggplot(temp) + geom_bar(aes(x= Time, fill = value), stat = "count") 
 }
 
-Plot_infected_fraction <- function(events, herds){
+Plot_infected_fraction <- function(events, herds, timelimit){
   events <- events[events$herd %in% herds, ]
   points <- ggplot(events, aes(x= Time, y = as.numeric(`Fraction infected`))) +
     geom_bin2d() + ylim(0, 1) + scale_fill_gradient(low="Grey", high="Black") +
-    ylab("Fraction infected animals") + ggtitle("A")
+    xlim(0, timelimit) + ylab("Fraction infected animals") + ggtitle("A")
   line <-  ggplot(events, aes(x= Time, y = as.numeric(`Fraction infected`))) +
-    geom_smooth(se = TRUE, method = "gam")  + ylim(0, 1) +
+    geom_smooth(se = TRUE, method = "gam")  + ylim(0, 1) + xlim(0, timelimit) +
     ylab("Fraction infected animals") + ggtitle("B")
 
   points + line + plot_layout(nrow = 2)
@@ -180,5 +179,5 @@ Write_infectivity_file_for_SIRE <- function(pedigree, filename, timepoints){
   pedigree$type <- "Contact"
   pedigree$type[pedigree$`0` == "I"] <- "Seeder"
   pedigree <- pivot_longer(pedigree, as.character(timepoints), "time")
-  write.table(pedigree, file = filename, sep = "\t")
+  write.table(pedigree, file = filename, sep = "\t", row.names = FALSE, quote = FALSE)
 }
