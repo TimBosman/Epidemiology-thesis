@@ -1,18 +1,19 @@
+setwd("C:/Users/Tim/Desktop/Epidemiology Thesis/Epidemiology-thesis")
 source("Epidemiology_Functions.R")
 
 ### Input parameters ##########################################################
 ## population stats ##
-nsire <- 102
-ndams <- nsire * 102
-nherds <- 102
-nSiresPerHerd <- 6
-nOffspringPerHerd <- 17 # number of offspring of one sire in herd
+nsire <- 100
+ndams <- nsire * 100
+nherds <- 100
+nSiresPerHerd <- 10
+nOffspringPerHerd <- 10 # number of offspring of one sire in herd
 
 ## Trait stats ##
-vAsus <- 0.5 # variation in suseptibility
-vEsus <- 0.5 # Environmental variation in suseptibility
-vAinf <- 0.5 # variation in infectivity
-vEinf <- 0.5 # Environmental variation in infectivity
+vAsus <- 0.25 # variation in suseptibility
+vEsus <- 0.25 # Environmental variation in suseptibility
+vAinf <- 0.25 # variation in infectivity
+vEinf <- 0.25 # Environmental variation in infectivity
 
 ## Infection stats ##
 alpha <- 0.02
@@ -35,9 +36,15 @@ InfectedPedigree <- data.frame()
 events <- data.frame()
 for(herd in levels(pedigree$herd)){
   herddata <- pedigree[pedigree$herd == herd,]
-  output <- simulate_infection(herddata, alpha, contactrate, max(timepoints),
+  repeat{
+    output <- simulate_infection(herddata, alpha, contactrate, max(timepoints),
                                infectivity = herddata$infectivity,
-                               susceptibility = herddata$susceptibility)
+                               susceptibility = herddata$susceptibility,
+                               initialstate = sample(c(rep("S", 99), "I")))
+    if(nrow(output[[2]] > 1)){
+      break
+    }
+  }
   InfectedPedigree <- rbind(InfectedPedigree, output[[1]])
   events <- rbind(events, output[[2]])
 }
@@ -47,6 +54,6 @@ pedigree <- Generate_time_series_data(timepoints, events, InfectedPedigree)
 
 Plot_time_series(pedigree, timepoints)
 
-Plot_infected_fraction(events, 1:102)
+Plot_infected_fraction(events, 1:nherds, max(timepoints))
 
-Write_infectivity_file_for_SIRE(pedigree, "SIRE.txt", timepoints)
+# Write_infectivity_file_for_SIRE(pedigree, "SIRE.txt", timepoints)
