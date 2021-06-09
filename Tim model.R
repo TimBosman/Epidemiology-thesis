@@ -57,7 +57,7 @@ Plot_infected_fraction(events, 1:nherds, max(timepoints))
 rm(events)
 Write_infectivity_file_for_SIRE(InfectedPedigree, "SIRE.txt", timepoints)
 
-GLMM_Data <- generate_GLMM_Data <- function(InfectedPedigree, timepoints)
+GLMM_Data <- generate_GLMM_Data(InfectedPedigree, timepoints)
 
 saveRDS(GLMM_Data, file = "dif.RDS")
 
