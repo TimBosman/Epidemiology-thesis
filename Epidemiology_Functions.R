@@ -125,7 +125,7 @@ simulate_infection <- function(herddata, alpha, contactrate, totaltime,
     }
     #Calculate time point
     time <- time + rexp(1, totalR)
-    events <- rbind(events, c(time, event, IndID, herd, newstatus, FractionInfected))
+    events <- rbind(events, c(time, event, IndID, herddata$herd[1], newstatus, FractionInfected))
   }
   events$Time <- as.numeric(events$Time)
   events <- events[!is.na(events$Event), ]
@@ -180,4 +180,28 @@ Write_infectivity_file_for_SIRE <- function(pedigree, filename, timepoints){
   pedigree$type[pedigree$`0` == "I"] <- "Seeder"
   pedigree <- pivot_longer(pedigree, as.character(timepoints), "time")
   write.table(pedigree, file = filename, sep = "\t", row.names = FALSE, quote = FALSE)
+}
+
+generate_GLMM_Data <- function(InfectedPedigree, timepoints){
+  dif = data.frame(matrix(NA, ncol = 7))
+  names(dif)<- c("Herd", "Sire", "S", "C", "DeltaT", "I", "t")
+  row = 1
+  for (herd in levels(InfectedPedigree$herd)){
+    herdrows = which(InfectedPedigree$herd == herd)
+    for(timepoint in as.character(timepoints[2:length(timepoints)])){
+      previoustime = as.character(timepoints[which(timepoints == timepoint)-1])
+      I = sum(InfectedPedigree[herdrows, previoustime] == "I")
+      if(I < 1){break}
+      DeltaT = as.numeric(timepoint) - as.numeric(previoustime)
+      for(sire in unique(InfectedPedigree$sires[herdrows])){
+        t1_value <- InfectedPedigree[herdrows[herdrows %in% which(InfectedPedigree$sires == sire)], previoustime]
+        t2_value <- InfectedPedigree[herdrows[herdrows %in% which(InfectedPedigree$sires == sire)], timepoint]
+        S = sum(t1_value == "S")
+        C = S - sum(t2_value == "S")
+        dif[row, ] = c(herd, sire, S, C, DeltaT, I, timepoint)
+        row = row + 1
+      }
+    }
+  }
+  return(dif)
 }
