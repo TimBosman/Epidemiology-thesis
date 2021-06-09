@@ -15,7 +15,7 @@ vErec <- 0.2 # Environmental variation in recoverability
 ## Infection stats ##
 alpha <- 0.1
 contactrate <- 0.15
-timepoints <- 0:20 * 7
+timepoints <- c(0, 280, 1400)
 
 ### Main script ###############################################################
 
@@ -38,5 +38,5 @@ for(herd in levels(pedigree$herd)){
 }
 
 ## Generate timeseries barplot ##
-Plot_infected_fraction(events, 1:nherds)
+Plot_infected_fraction(events, 1:nherds, 1400)
 
