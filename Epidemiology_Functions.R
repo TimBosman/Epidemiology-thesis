@@ -68,7 +68,7 @@ set_herd <- function(pedigree, nherds, off_sire_g, nsires_g){
   }
   offspring <- matrix(nrow = 0, ncol = ncol(pedigree)+1)
   colnames(offspring) <- c(colnames(pedigree), "group")
-  for(s in 1:length(levels(pedigree$sires))){
+  for(s in as.numeric(levels(pedigree$sires))){
     offspring_sel <- pedigree[pedigree$sires==s,]
     offspring_sel$herd <- rep(samples_sg[s,1:nsires_g], off_sire_g)
     offspring <- rbind(offspring, offspring_sel)
