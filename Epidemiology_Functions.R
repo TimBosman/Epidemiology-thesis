@@ -183,8 +183,8 @@ Write_infectivity_file_for_SIRE <- function(pedigree, filename, timepoints){
 }
 
 generate_GLMM_Data <- function(InfectedPedigree, timepoints){
-  dif = data.frame(matrix(NA, ncol = 7))
-  names(dif)<- c("Herd", "Sire", "S", "C", "DeltaT", "I", "t")
+  dif = data.frame(matrix(NA, ncol = 8))
+  names(dif)<- c("Herd", "Sire", "S", "C", "DeltaT", "I", "t", "Isire")
   row = 1
   for (herd in levels(InfectedPedigree$herd)){
     herdrows = which(InfectedPedigree$herd == herd)
@@ -196,12 +196,21 @@ generate_GLMM_Data <- function(InfectedPedigree, timepoints){
       for(sire in unique(InfectedPedigree$sires[herdrows])){
         t1_value <- InfectedPedigree[herdrows[herdrows %in% which(InfectedPedigree$sires == sire)], previoustime]
         t2_value <- InfectedPedigree[herdrows[herdrows %in% which(InfectedPedigree$sires == sire)], timepoint]
+        Isire = sum(t1_value == "I")
         S = sum(t1_value == "S")
         C = S - sum(t2_value == "S")
-        dif[row, ] = c(herd, sire, S, C, DeltaT, I, timepoint)
+        dif[row, ] = c(herd, sire, S, C, DeltaT, I, timepoint, Isire)
         row = row + 1
       }
     }
   }
+  dif$Herd <- as.factor(dif$Herd)
+  dif$Sire <- as.factor(dif$Sire)
+  dif$S <- as.integer(dif$S)
+  dif$C <- as.integer(dif$C)
+  dif$I <- as.integer(dif$I)
+  dif$DeltaT <- as.numeric(dif$DeltaT)
+  dif$Isire <- as.integer(dif$Isire)
+  
   return(dif)
 }

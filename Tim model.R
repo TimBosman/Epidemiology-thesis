@@ -17,7 +17,7 @@ vEinf <- 0.25 # Environmental variation in infectivity
 
 ## Infection stats ##
 alpha <- 0.02
-contactrate <- 0.03
+contactrate <- 0.06
 timepoints <- 0:20 * 14
 
 ### Main script ###############################################################
@@ -58,16 +58,6 @@ rm(events)
 Write_infectivity_file_for_SIRE(InfectedPedigree, "SIRE.txt", timepoints)
 
 GLMM_Data <- generate_GLMM_Data(InfectedPedigree, timepoints)
-
-saveRDS(GLMM_Data, file = "dif.RDS")
-
-GLMM_Data = readRDS(file = "dif.RDS")
-GLMM_Data$Herd <- as.factor(GLMM_Data$Herd)
-GLMM_Data$Sire <- as.factor(GLMM_Data$Sire)
-GLMM_Data$S <- as.integer(GLMM_Data$S)
-GLMM_Data$C <- as.integer(GLMM_Data$C)
-GLMM_Data$I <- as.integer(GLMM_Data$I)
-GLMM_Data$DeltaT <- as.numeric(GLMM_Data$DeltaT)
 
 library(lme4)
 model = glmer(data = GLMM_Data,
